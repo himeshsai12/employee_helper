@@ -79,6 +79,49 @@ class AgentTests(unittest.TestCase):
         model.assert_not_called()
 
 
+class ConnectionSettingsTests(unittest.TestCase):
+    def test_local_connection_uses_supplied_settings(self):
+        settings = {
+            "DB_HOST": "localhost", "DB_PORT": "3307", "DB_USER": "test-user",
+            "DB_PASSWORD": "test-password", "DB_NAME": "test-db",
+        }
+        with patch.object(db.mysql.connector, "connect") as connect:
+            result = db.get_connection(settings)
+        self.assertIs(result, connect.return_value)
+        self.assertEqual(connect.call_args.kwargs["port"], 3307)
+        self.assertEqual(connect.call_args.kwargs["database"], "test-db")
+        self.assertNotIn("ssl_ca", connect.call_args.kwargs)
+
+    def test_provider_ca_enables_certificate_and_hostname_verification(self):
+        certificate = "-----BEGIN CERTIFICATE-----\nTEST-CA\n-----END CERTIFICATE-----"
+        settings = {"DB_HOST": "db.example.invalid", "DB_SSL_CA_PEM": certificate}
+        ca_paths = []
+
+        def connect(**options):
+            ca_path = Path(options["ssl_ca"])
+            ca_paths.append(ca_path)
+            self.assertEqual(ca_path.read_text(encoding="utf-8"), certificate)
+            self.assertTrue(options["ssl_verify_cert"])
+            self.assertTrue(options["ssl_verify_identity"])
+            return "test-connection"
+
+        with patch.object(db.mysql.connector, "connect", side_effect=connect):
+            self.assertEqual(db.get_connection(settings), "test-connection")
+        self.assertFalse(ca_paths[0].exists())
+
+    def test_failed_tls_connection_removes_temporary_certificate(self):
+        ca_paths = []
+
+        def connect(**options):
+            ca_paths.append(Path(options["ssl_ca"]))
+            raise DatabaseError("Synthetic TLS failure")
+
+        with patch.object(db.mysql.connector, "connect", side_effect=connect):
+            with self.assertRaises(DatabaseError):
+                db.get_connection({"DB_SSL_CA_PEM": "Synthetic CA"})
+        self.assertFalse(ca_paths[0].exists())
+
+
 class DatabaseTests(unittest.TestCase):
     def setUp(self):
         self.connection = MagicMock()

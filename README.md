@@ -63,6 +63,18 @@ DB_NAME = "your_database_name"
 
 Use your provider's actual port and database name. Save the secrets and reboot the cloud app. An error mentioning `localhost:3306` means the app is still configured to use a local database address or `DB_HOST` has not been provided as a top-level secret.
 
+For a provider such as Aiven that supplies its own CA certificate, also add the downloaded certificate as a top-level multiline secret:
+
+```toml
+DB_SSL_CA_PEM = """
+-----BEGIN CERTIFICATE-----
+paste_the_provider_certificate_here
+-----END CERTIFICATE-----
+"""
+```
+
+When this setting is present, the app verifies both the provider's certificate and its database hostname. Use the complete certificate supplied by your database service.
+
 ## Tests
 
 ```powershell

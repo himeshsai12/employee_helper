@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 .streamlit/secrets.toml
+.cloud/
 
 # Python environments and generated files
 uk/

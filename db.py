@@ -1,5 +1,7 @@
 import os
 import uuid
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import mysql.connector
 from dotenv import load_dotenv
@@ -7,15 +9,30 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def get_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "tcs"),
-        connection_timeout=5
-    )
+def get_connection(settings=None):
+    settings = os.environ if settings is None else settings
+    connection_options = {
+        "host": settings.get("DB_HOST", "localhost"),
+        "port": int(settings.get("DB_PORT", "3306")),
+        "user": settings.get("DB_USER", "root"),
+        "password": settings.get("DB_PASSWORD", ""),
+        "database": settings.get("DB_NAME", "tcs"),
+        "connection_timeout": 5,
+    }
+
+    ca_pem = settings.get("DB_SSL_CA_PEM", "").strip()
+    if ca_pem:
+        with TemporaryDirectory(prefix="employee-helper-ca-") as directory:
+            ca_path = Path(directory) / "ca.pem"
+            ca_path.write_text(ca_pem, encoding="utf-8")
+            return mysql.connector.connect(
+                **connection_options,
+                ssl_ca=str(ca_path),
+                ssl_verify_cert=True,
+                ssl_verify_identity=True,
+            )
+
+    return mysql.connector.connect(**connection_options)
 
 
 def _open_cursor(dictionary=False):
