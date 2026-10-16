@@ -1,0 +1,30 @@
+# Local credentials
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Python environments and generated files
+uk/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Local logs, data, and editor settings
+.logs/
+*.log
+*.sql.gz
+*.dump
+*.db
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

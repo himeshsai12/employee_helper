@@ -1,0 +1,20 @@
+[theme]
+base = "light"
+primaryColor = "#5146d8"
+backgroundColor = "#f5f7ff"
+secondaryBackgroundColor = "#eef1fa"
+textColor = "#182448"
+yellowBackgroundColor = "#fff3cd"
+yellowTextColor = "#664d03"
+greenBackgroundColor = "#d1e7dd"
+greenTextColor = "#0f5132"
+redBackgroundColor = "#f8d7da"
+redTextColor = "#842029"
+blueBackgroundColor = "#cfe2ff"
+blueTextColor = "#084298"
+
+[theme.sidebar]
+backgroundColor = "#101a38"
+secondaryBackgroundColor = "#1c2b50"
+textColor = "#f2f5ff"
+primaryColor = "#a99fff"

@@ -1,0 +1,6 @@
+streamlit
+pandas
+mysql-connector-python
+python-dotenv
+langchain
+langchain-groq>=1.0,<2.0
