@@ -43,6 +43,26 @@ Open the local URL printed by Streamlit. On **Tickets**, choose **New IT ticket*
 
 AI Helpdesk requires a valid Groq key and an available API request allowance. Chat questions and relevant tool results are sent to Groq to generate answers. Quick-question examples refer to demo IDs such as `E101` and `T101`; those examples need matching records in your database.
 
+## Streamlit Community Cloud
+
+Deploy `app.py` from the `main` branch. Python dependencies are installed from the lowercase `requirements.txt` file.
+
+The cloud app needs a MySQL server reachable from Streamlit Cloud. `localhost` and `127.0.0.1` refer to the cloud app's own machine, so copying your computer's local database credentials will not connect it to your local MySQL server. Create or use a hosted MySQL database, run `schema.sql` there, and add the employee records you want to use.
+
+In the app's **Settings > Secrets**, enter these top-level TOML settings, replacing the placeholders with the values from your database provider:
+
+```toml
+GROQ_API_KEY = "your_groq_api_key"
+MODEL_NAME = "openai/gpt-oss-20b"
+DB_HOST = "your_hosted_mysql_address"
+DB_PORT = "3306"
+DB_USER = "your_database_username"
+DB_PASSWORD = "your_database_password"
+DB_NAME = "your_database_name"
+```
+
+Use your provider's actual port and database name. Save the secrets and reboot the cloud app. An error mentioning `localhost:3306` means the app is still configured to use a local database address or `DB_HOST` has not been provided as a top-level secret.
+
 ## Tests
 
 ```powershell

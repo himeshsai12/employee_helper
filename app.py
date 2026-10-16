@@ -15,7 +15,7 @@ from db import (
 )
 
 from graph import ask_helpdesk
-from errors import helpdesk_error_message
+from errors import database_error_message, helpdesk_error_message
 
 
 st.set_page_config(
@@ -220,9 +220,9 @@ def load_saved_chat():
             st.session_state.notice = ("success", "Previous conversation loaded.")
         else:
             st.session_state.notice = ("info", "No saved conversation found.")
-    except Exception:
+    except Exception as error:
         st.session_state.notice = (
-            "error", "Could not load history. Check the MySQL connection."
+            "error", "Could not load history. " + database_error_message(error)
         )
 
 
@@ -267,7 +267,7 @@ with st.sidebar:
             connection.close()
             st.success("MySQL connected successfully.")
         except Exception as error:
-            st.error(f"MySQL connection failed: {error}")
+            st.error(database_error_message(error))
 
     st.divider()
     st.caption("Python · Streamlit · LangChain · Groq · MySQL")
@@ -367,8 +367,7 @@ if page == "Overview":
 
     except Exception as error:
         st.error(
-            "Unable to load dashboard. Check your MySQL setup.\n\n"
-            f"Details: {error}"
+            "Unable to load dashboard. " + database_error_message(error)
         )
 
 
@@ -470,10 +469,10 @@ elif page == "AI Helpdesk":
                     answer
                 )
 
-            except Exception:
+            except Exception as error:
                 st.warning(
                     "Answer displayed, but history could not be saved. "
-                    "Check the MySQL connection."
+                    + database_error_message(error)
                 )
 
 
@@ -501,9 +500,9 @@ elif page == "Tickets":
 
         try:
             employees = list_employees()
-        except Exception:
+        except Exception as error:
             employees = []
-            st.error("Could not load employees. Check the MySQL connection.")
+            st.error("Could not load employees. " + database_error_message(error))
 
         employee_labels = {
             employee["employee_id"]: f"{employee['employee_id']} - {employee['name']}"
@@ -565,7 +564,10 @@ elif page == "Tickets":
                         )
 
                 except Exception as error:
-                    st.error(f"Could not create ticket: {error}")
+                    if isinstance(error, ValueError):
+                        st.warning(str(error))
+                    else:
+                        st.error("Could not create ticket. " + database_error_message(error))
 
     st.divider()
 
@@ -602,7 +604,7 @@ elif page == "Tickets":
         )
 
     except Exception as error:
-        st.error(f"Could not load tickets: {error}")
+        st.error("Could not load tickets. " + database_error_message(error))
 
 
 # ---------------- EMPLOYEE DIRECTORY ----------------
@@ -629,7 +631,7 @@ elif page == "Employees":
         )
 
     except Exception as error:
-        st.error(f"Could not load employees: {error}")
+        st.error("Could not load employees. " + database_error_message(error))
 
 
 # ---------------- ASSET INVENTORY ----------------
@@ -656,4 +658,4 @@ elif page == "Assets":
         )
 
     except Exception as error:
-        st.error(f"Could not load assets: {error}")
+        st.error("Could not load assets. " + database_error_message(error))

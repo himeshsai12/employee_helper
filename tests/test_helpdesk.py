@@ -14,7 +14,7 @@ from streamlit.testing.v1 import AppTest
 import db
 import graph
 import tools
-from errors import helpdesk_error_message
+from errors import database_error_message, helpdesk_error_message
 
 
 APP = str(Path(__file__).resolve().parents[1] / "app.py")
@@ -147,6 +147,27 @@ class DatabaseTests(unittest.TestCase):
 
 
 class ErrorMessageTests(unittest.TestCase):
+    def test_local_database_failure_explains_cloud_configuration(self):
+        error = DatabaseError("Connection failed; private details", errno=2003)
+        with patch.dict("os.environ", {"DB_HOST": "localhost"}):
+            message = database_error_message(error)
+        self.assertIn("Streamlit Cloud", message)
+        self.assertIn("DB_HOST", message)
+        self.assertIn("hosted MySQL", message)
+        self.assertNotIn("private details", message)
+
+    def test_remote_database_failure_has_network_guidance(self):
+        with patch.dict("os.environ", {"DB_HOST": "db.example.invalid"}):
+            message = database_error_message(DatabaseError("Connection refused", errno=2003))
+        self.assertIn("DB_PORT", message)
+        self.assertIn("network access", message)
+        self.assertNotIn("db.example.invalid", message)
+
+    def test_agent_database_failure_has_database_guidance(self):
+        with patch.dict("os.environ", {"DB_HOST": "localhost"}):
+            message = helpdesk_error_message(DatabaseError("Connection refused", errno=2003))
+        self.assertIn("DB_HOST", message)
+
     def test_request_limit_has_actionable_message(self):
         message = helpdesk_error_message(provider_error(RateLimitError, 429, "rate_limit_exceeded"))
         self.assertIn("Groq request limit", message)
@@ -205,6 +226,13 @@ class AppTests(unittest.TestCase):
             self.at.sidebar.radio[0].set_value(page).run()
             self.check_page()
             self.assertFalse(self.at.error)
+
+    def test_dashboard_database_failure_explains_required_cloud_host(self):
+        with patch.object(db, "get_dashboard_stats", side_effect=DatabaseError("Connection refused", errno=2003)), patch.dict("os.environ", {"DB_HOST": "localhost"}):
+            self.at.run()
+        self.check_page()
+        self.assertIn("Streamlit Cloud", self.at.error[0].value)
+        self.assertIn("DB_HOST", self.at.error[0].value)
 
     def test_quick_action_creates_ticket_without_jumping_back(self):
         self.at.sidebar.button[0].click().run()

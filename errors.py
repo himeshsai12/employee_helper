@@ -1,5 +1,8 @@
 """Translate provider failures into actionable messages without exposing secrets."""
 
+import os
+
+from mysql.connector import Error as MySQLError
 from groq import (
     APIConnectionError,
     APITimeoutError,
@@ -10,7 +13,32 @@ from groq import (
 )
 
 
+def database_error_message(error):
+    if isinstance(error, MySQLError) and error.errno in {2002, 2003, 2005}:
+        host = os.getenv("DB_HOST", "localhost").strip().lower()
+        if host in {"localhost", "127.0.0.1", "::1"}:
+            return (
+                "Cannot reach MySQL at localhost. For a local app, start your "
+                "MySQL server. On Streamlit Cloud, set DB_HOST in the app's "
+                "Secrets to a hosted MySQL server address. The cloud app cannot "
+                "connect to your computer's MySQL through localhost."
+            )
+        return (
+            "Cannot reach the configured MySQL server. Check DB_HOST and DB_PORT "
+            "in the app's Secrets or local .env, and the database provider's "
+            "network access settings."
+        )
+
+    return (
+        "The database request could not be completed. Check the MySQL connection "
+        "settings and confirm the tables in schema.sql exist."
+    )
+
+
 def helpdesk_error_message(error):
+    if isinstance(error, MySQLError):
+        return database_error_message(error)
+
     if isinstance(error, RateLimitError):
         return (
             "The Groq request limit has been reached. Wait a moment and try again. "
